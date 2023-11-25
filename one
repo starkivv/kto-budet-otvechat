@@ -1,0 +1,61 @@
+from random import choice
+ 
+def random_response(): 
+    mesto = []
+    r_list = ["Первый", "Второй", "Третий"]
+    p_list = ["Первая", "Вторая", "Третья", "Четвертая", "Пятая"]
+    v_list = ["Первый вариант", "Второй вариант"]
+    
+    mesto = [f"{r} ряд. {p} парта. {v}." for r in r_list for p in p_list for v in v_list]
+                                    
+    return choice(mesto)
+ 
+def alice_skill(event, context): 
+    """ 
+    Entry-point for Serverless Function. 
+    :param event: request payload. 
+    :param context: information about current execution context. 
+    :return: response to be serialized as JSON. 
+    """ 
+    response = "Привет! Я могу помочь вам выбрать того, кто будет отвечать. Готовы начать?" 
+    original_utterance = event["request"]["original_utterance"] if "request" in event and "original_utterance" in event["request"] else ""
+    original_utterance = original_utterance.lower()
+ 
+    if any(word in original_utterance for word in ["да", "следующий"]): 
+        # Если пользователь соглашается начать, выбираем случайное место из списка 
+        response = f"Отлично! Сейчас будет отвечать {random_response()}" 
+        buttons = [{"title": "Следующий", "hide": True}, {"title": "Нет", "hide": True}] 
+ 
+    elif "нет" in original_utterance: 
+        # Если пользователь отказывается начать, просим сказать, когда будут готовы 
+        response = "Хорошо, пожалуйста, скажите, 'Да', когда будете готовы начать." 
+        buttons = [{"title": "Да", "hide": True}, {"title": "Нет", "hide": True}] 
+    elif "стоп" in original_utterance: 
+        # Если пользователь говорит "Стоп", завершаем сессию 
+        return { 
+            "version": event["version"], 
+            "session": event["session"], 
+            "response": { 
+                "text": "Сессия завершена", 
+                "end_session": True 
+            }, 
+        } 
+    else: 
+        # Если пользователь говорит что-то другое, просим отвечать "Да", "Нет" или "Следующий" 
+        response = "Я не понимаю. Пожалуйста, отвечайте 'Да', 'Нет' или 'Следующий'." 
+        buttons = [{"title": "Да", "hide": True}, {"title": "Нет", "hide": True}, {"title": "Следующий", "hide": True}] 
+ 
+    if not original_utterance: 
+        response = choice(["Привет! Я могу помочь вам выбрать того, кто будет отвечать. Скажите 'Да', чтобы начать.", "Сейчас мы выберем того, кто будет отвечать! Скажите 'Да', чтобы начать.", "Ну, что, начнем?"]) 
+        buttons = [{"title": "Да", "hide": True}, {"title": "Нет", "hide": True}] 
+ 
+ 
+    return { 
+        "version": event["version"], 
+        "session": event["session"], 
+        "response": { 
+            "text": response, 
+            "buttons": buttons, 
+            "end_session": False 
+        }, 
+    }
