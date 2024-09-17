@@ -22,7 +22,15 @@ def random_response():
 # Определяем функцию start_session, которая будет вызываться в случае начала новой сессии
 def start_session():
     # Формируем ответ со случайным местом
-    response = f"Отлично! Сейчас будет отвечать {random_response()}"
+    response = choice([
+    "Отлично! Сейчас будет отвечать {}".format(random_response()), 
+    "Теперь очередь {}".format(random_response()),
+    "Мы все готовы слушать тебя {}".format(random_response()),
+    f"Ура! Вот твой шанс {random_response()}",
+    f"Ну, давай, дерзай, {random_response()}",
+    f"Я уверена, ты будешь лучшим, {random_response()}"
+])
+
     # Определяем кнопки, которые будут отображаться в ответе
     buttons = [{"title": "Следующий", "hide": True}, {"title": "Нет", "hide": True}]
 
