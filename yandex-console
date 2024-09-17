@@ -1,0 +1,110 @@
+# Код выполняется, подключаем функционал выбора случайного элемента из списка
+from random import choice
+
+# Определяем функцию random_response, которая будет возвращать случайное место
+def random_response():
+    # Создаем пустой список mesto
+    mesto = []
+    # Определяем список r_list с названиями рядов
+    r_list = ["Первый", "Второй", "Третий"]
+    # Определяем список p_list с названиями парт
+    p_list = ["Первая", "Вторая", "Третья", "Четвертая", "Пятая"]
+    # Определяем список v_list с вариантами
+    v_list = ["Первый вариант", "Второй вариант"]
+
+    # Генерируем все возможные комбинации рядов, парт и вариантов
+    # и добавляем их в список mesto в формате "ряд. парта. вариант"
+    mesto = [f"{r} ряд. {p} парта. {v}." for r in r_list for p in p_list for v in v_list]
+
+    # Возвращаем случайное значение из списка mesto
+    return choice(mesto)
+
+# Определяем функцию start_session, которая будет вызываться в случае начала новой сессии
+def start_session():
+    # Формируем ответ со случайным местом
+    response = f"Отлично! Сейчас будет отвечать {random_response()}"
+    # Определяем кнопки, которые будут отображаться в ответе
+    buttons = [{"title": "Следующий", "hide": True}, {"title": "Нет", "hide": True}]
+
+    # Возвращаем ответ и кнопки
+    return response, buttons
+
+# Определяем функцию end_session, которая будет вызываться в случае завершения сессии
+def end_session():
+    # Генерируем случайный ответ из списка
+    response = choice(["Спасибо за работу! С Вами было интересно", "До свидания.", "Я буду скучать по Вам!", "До новых встреч.", "С Вами было приятно работать"])
+
+    # Возвращаем ответ и флаг завершения сессии
+    return {
+        "text": response,
+        "end_session": True
+    }
+
+# Определяем функцию alice_skill, которая является точкой входа в навык
+def alice_skill(event, context):
+    """ 
+    Entry-point for Serverless Function.
+    :param event: request payload.
+    :param context: information about current execution context.
+    :return: response to be serialized as JSON.
+    """
+    # Получаем значение original_utterance из запроса, если оно присутствует
+    original_utterance = event["request"]["original_utterance"].lower() if "request" in event and "original_utterance" in event["request"] else ""
+
+    # Обрабатываем различные случаи в зависимости от значения original_utterance
+    if any(word in original_utterance for word in ["да", "следующий"]):
+        # Если в original_utterance содержится слово "да" или "следующий",
+        # вызываем функцию start_session для получения ответа и кнопок
+        response, buttons = start_session()
+
+    elif "нет" in original_utterance:
+        # Если в original_utterance содержится слово "нет",
+        # формируем ответ с предложением начать процесс выбора
+        response = "Хорошо, пожалуйста, скажите, 'Да', когда будете готовы начать."
+        buttons = [{"title": "Да", "hide": True}, {"title": "Нет", "hide": True}]
+
+    elif any(word in original_utterance for word in ["алиса, вернись", "стоп", "алиса, хватит", "закончить", "выйти", "вернись", "хватит"]):
+        # Если в original_utterance содержится слово "стоп",
+        # вызываем функцию end_session для завершения сессии
+        return {
+            "version": event["version"],
+            "session": event["session"],
+            "response": end_session()
+        }
+
+    elif "помощь" in original_utterance:
+        # Если в original_utterance содержится слово "помощь",
+        # формируем ответ с описанием навыка
+        response = "Данный навык позволяет случайно выбрать место в кабинете, тем самым указав, кто должен ответить. Скажите Да или Следующий чтобы выбрать место."
+        buttons = [{"title": "Да", "hide": True}, {"title": "Нет", "hide": True}]
+
+    elif "что ты умеешь" in original_utterance:
+# Если в original_utterance содержится фраза "что ты умеешь",
+        # формируем ответ с описанием функционала навыка
+        response = "Навык 'Кто будет отвечать' поможет вам определить, кто будет отвечать на вопросы или выполнять задания. С помощью этого навыка вы сможете выбрать случайное место, где будет расположен отвечающий, например, ряд, парта и вариант. Просто скажите 'Да', чтобы начать процесс выбора. Если вы не готовы начать или хотите выбрать другого отвечающего, вы можете сказать 'Нет' или 'Следующий'. Приятного использования!"
+        buttons = [{"title": "Да", "hide": True}, {"title": "Нет", "hide": True}]
+
+    else:
+        # Если в original_utterance содержатся другие слова,
+        # формируем ответ с предложением выбрать "Да", "Нет" или "Следующий"
+        response = "Я не понимаю. Пожалуйста, отвечайте 'Да', 'Нет' или 'Следующий'."
+        buttons = [{"title": "Да", "hide": True}, {"title": "Нет", "hide": True}, {"title": "Следующий", "hide": True}]
+
+    if not original_utterance:
+        # Если original_utterance пустое (пользователь не произнес фразу),
+        # формируем приветственное сообщение и предлагаем начать выбор
+        response = choice(["Привет! Я могу помочь вам выбрать того, кто будет отвечать. Скажите 'Да', чтобы начать.",
+                           "Сейчас мы выберем того, кто будет отвечать! Скажите 'Да', чтобы начать.",
+                           "Ну, что, начнем?"])
+        buttons = [{"title": "Да", "hide": True}, {"title": "Нет", "hide": True}]
+
+    # Формируем ответ в виде JSON-объекта
+    return {
+        "version": event["version"],
+        "session": event["session"],
+        "response": {
+            "text": response,
+            "buttons": buttons,
+            "end_session": False
+        }
+    }
